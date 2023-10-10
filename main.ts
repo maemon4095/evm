@@ -1,8 +1,27 @@
-export function add(a: number, b: number): number {
-  return a + b;
-}
+// syntax ::= "env" ("win32" | "macos"))
+//          | "plugin"
 
-// Learn more at https://deno.land/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-  console.log("Add 2 + 4 =", add(2, 4));
+function repeat(a: any): any {
+
+};
+
+function flag(): any {
+
 }
+const syntax = {
+  "env": ["win32", "macos"],
+  "plugin": repeat({
+    "--dev": flag()
+  })
+};
+
+const worker = new Worker(new URL("./aaa.ts", import.meta.url), {
+  type: "module",
+  deno: {
+    permissions: {
+      net: [],
+      run: ["./lib/*"]
+    }
+  }
+});
+
