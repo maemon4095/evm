@@ -1,6 +1,7 @@
 import { args_from } from "./args.ts";
 
-const args = args_from(Deno.args);
+console.log(Deno.args);
+//const args = args_from(Deno.args);
 
 
 const worker = new Worker(new URL("./aaa.ts", import.meta.url), {
