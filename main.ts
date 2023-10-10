@@ -1,19 +1,7 @@
-// syntax ::= "env" ("win32" | "macos"))
-//          | "plugin"
+import { args_from } from "./args.ts";
 
-function repeat(a: any): any {
+const args = args_from(Deno.args);
 
-};
-
-function flag(): any {
-
-}
-const syntax = {
-  "env": ["win32", "macos"],
-  "plugin": repeat({
-    "--dev": flag()
-  })
-};
 
 const worker = new Worker(new URL("./aaa.ts", import.meta.url), {
   type: "module",
