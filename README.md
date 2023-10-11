@@ -17,3 +17,6 @@ Executable Version Manager
 `evm use ${name}`したとき,pathが通されている場所に`${name}`という名前のshell scriptが作成される．
 
 `--global`フラグでglobalにしてもいいかも．
+
+global/localの区別だと管理者権限でインストールした場合のみになってしまう．
+インストールロケーションを指定する形にするか．
