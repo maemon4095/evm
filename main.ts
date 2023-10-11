@@ -1,4 +1,4 @@
-import { parse_args } from "./args.ts";
+import { parseArgs } from "./args.ts";
 
 console.log(Deno.args);
 //const args = args_from(Deno.args);
