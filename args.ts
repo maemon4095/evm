@@ -1,12 +1,8 @@
+import { std } from "./deps.ts";
+
 // deno-lint-ignore no-unused-vars
-class PathSafeStringMark {
-    static #SYMBOL = Symbol();
-
-    constructor(symbol: symbol) {
-        this.#symbol = symbol;
-    }
-
-    #symbol;
+abstract class PathSafeStringMark {
+    readonly #mark: undefined;
 }
 
 /** non emptystring only contains A to Z, a to z, 0 to 9, _, - and . */
@@ -73,7 +69,7 @@ export type ArgUse = {
 
 export function parseArgs(args: string[]): Args {
     const SUBCOMMAND = "SUBCOMMAND";
-    const usage = `evm \${${SUBCOMMAND}}`;
+    const usage = `evm \${${SUBCOMMAND}: list | plugin | install | use}`;
     if (args.length === 0) {
         throw new ArgumentMissingError(SUBCOMMAND, usage);
     }
@@ -114,7 +110,7 @@ function parseRestOfList(args: string[]): ArgList {
 
         if (arg === "--location") {
             if (location !== null) {
-                throw new ArgumentDuplicatedError(LOCATION_IDENT, usage);
+                throw new UnexpectedArgumentError(args, usage);
             }
 
             const l = args.at(index);
@@ -133,7 +129,7 @@ function parseRestOfList(args: string[]): ArgList {
             } as ArgLocation;
         } else {
             if (identifier !== null) {
-                throw new ArgumentDuplicatedError(IDENT, usage);
+                throw new UnexpectedArgumentError(args, usage);
             }
 
             if (!isPathSafe(arg)) {
@@ -161,13 +157,13 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
         case "install": {
             return {
                 subCommand: "plugin",
-                pluginSubCommand: parse_install(args.slice(1))
+                pluginSubCommand: parseInstall(args.slice(1))
             };
         }
         case "uninstall": {
             return {
                 subCommand: "plugin",
-                pluginSubCommand: parse_uninstall(args.slice(1))
+                pluginSubCommand: parseUninstall(args.slice(1))
             };
         }
         case "list": {
@@ -183,19 +179,34 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             throw new InvalidArgumentError(PLUGIN_SUBCOMMAND, `unrecognized plugin subcommand: '${mode}'`, usage);
         }
     }
-    function parse_install(args: string[]): ArgPluginInstall {
+    function parseInstall(args: string[]): ArgPluginInstall {
         const URL_VAR = "URL";
         const usage = `install \${${URL_VAR}}`;
         if (args.length > 1) {
             throw new UnexpectedArgumentError(args, usage);
         }
+        const arg = args.at(0);
 
-        const url = args[0];
+        if (arg === undefined) {
+            throw new ArgumentMissingError(URL_VAR, usage);
+        }
 
-        return { subCommand: "install", url: new URL(url) };
+
+
+        let url;
+
+        try {
+            url = parseURL(arg);
+        } catch (e) {
+            if (e instanceof TypeError) {
+                throw new InvalidArgumentError(URL_VAR, `${URL_VAR} must be valid url.`, usage);
+            }
+            throw e;
+        }
+        return { subCommand: "install", url };
     }
 
-    function parse_uninstall(args: string[]): ArgPluginUninstall {
+    function parseUninstall(args: string[]): ArgPluginUninstall {
         const URL_VAR = "URL";
         const usage = `uninstall \${${URL_VAR}}`;
         if (args.length > 1) {
@@ -225,7 +236,7 @@ function parseRestOfInstall(args: string[]): ArgInstall {
 
         if (arg === "--location") {
             if (location !== null) {
-                throw new ArgumentDuplicatedError(LOCATION_IDENT, usage);
+                throw new UnexpectedArgumentError(args, usage);
             }
 
             const l = args.at(index);
@@ -311,6 +322,41 @@ function parseRestOfUse(args: string[]): ArgUse {
 }
 
 
+function parseURL(str: string): URL {
+    // See RFC2396 3.1 Scheme Component: https://www.ietf.org/rfc/rfc2396.txt
+    const StartsWithSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):.*$/;
+
+    const match = str.match(StartsWithSchemePattern);
+    if (match === null) {
+        return new URL(std.path.resolve(str), "file:");
+    }
+
+    switch (Deno.build.os) {
+        case "darwin":
+        case "linux":
+        case "freebsd":
+        case "netbsd":
+        case "aix":
+        case "solaris":
+        case "illumos":
+            // posix path does not has drive letter
+            return new URL(str);
+
+        case "windows":
+            break;
+    }
+
+    const scheme = match.groups!.scheme;
+
+    if (scheme.length != 1) {
+        // currently drive letter are always one character
+        return new URL(str);
+    }
+    // path has drive letter are absolute
+    console.log(str);
+    return new URL(`file:///${str}`);
+};
+
 export class ArgumentMissingError {
     #name: string;
     #usage: string;
@@ -344,23 +390,6 @@ export class InvalidArgumentError {
 
     get message(): string {
         return this.#message;
-    }
-
-    get usage(): string {
-        return this.#usage;
-    }
-}
-
-export class ArgumentDuplicatedError {
-    #name: string;
-    #usage: string;
-    constructor(name: string, usage: string) {
-        this.#name = name;
-        this.#usage = usage;
-    }
-
-    get name(): string {
-        return this.#name;
     }
 
     get usage(): string {
