@@ -1,5 +1,3 @@
-import { std } from "./deps.ts";
-
 // deno-lint-ignore no-unused-vars
 abstract class PathSafeStringMark {
     readonly #mark: undefined;
@@ -37,13 +35,13 @@ export type ArgPlugin = {
 /** ... install ${url} */
 export type ArgPluginInstall = {
     subCommand: "install";
-    url: URL;
+    pathOrURL: URL | string;
 };
 
 /** ... uninstall ${url} */;
 export type ArgPluginUninstall = {
     subCommand: "uninstall";
-    url: URL;
+    pathOrURL: URL | string;
 };
 
 /** ... list */
@@ -154,16 +152,11 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
     const mode = args.at(0);
 
     switch (mode) {
-        case "install": {
-            return {
-                subCommand: "plugin",
-                pluginSubCommand: parseInstall(args.slice(1))
-            };
-        }
+        case "install":
         case "uninstall": {
             return {
                 subCommand: "plugin",
-                pluginSubCommand: parseUninstall(args.slice(1))
+                pluginSubCommand: parseInstallOrUninstall(mode, args.slice(1))
             };
         }
         case "list": {
@@ -179,9 +172,9 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             throw new InvalidArgumentError(PLUGIN_SUBCOMMAND, `unrecognized plugin subcommand: '${mode}'`, usage);
         }
     }
-    function parseInstall(args: string[]): ArgPluginInstall {
+    function parseInstallOrUninstall(cmd: "install" | "uninstall", args: string[]): ArgPluginInstall {
         const URL_VAR = "URL";
-        const usage = `install \${${URL_VAR}}`;
+        const usage = `${cmd} \${${URL_VAR}}`;
         if (args.length > 1) {
             throw new UnexpectedArgumentError(args, usage);
         }
@@ -191,31 +184,17 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             throw new ArgumentMissingError(URL_VAR, usage);
         }
 
-
-
-        let url;
+        let pathOrURL;
 
         try {
-            url = parseURL(arg);
+            pathOrURL = parsePathOrURL(arg);
         } catch (e) {
             if (e instanceof TypeError) {
                 throw new InvalidArgumentError(URL_VAR, `${URL_VAR} must be valid url.`, usage);
             }
             throw e;
         }
-        return { subCommand: "install", url };
-    }
-
-    function parseUninstall(args: string[]): ArgPluginUninstall {
-        const URL_VAR = "URL";
-        const usage = `uninstall \${${URL_VAR}}`;
-        if (args.length > 1) {
-            throw new UnexpectedArgumentError(args, usage);
-        }
-
-        const url = args[0];
-
-        return { subCommand: "uninstall", url: new URL(url) };
+        return { subCommand: "install", pathOrURL };
     }
 }
 
@@ -322,13 +301,13 @@ function parseRestOfUse(args: string[]): ArgUse {
 }
 
 
-function parseURL(str: string): URL {
+function parsePathOrURL(str: string): URL | string {
     // See RFC2396 3.1 Scheme Component: https://www.ietf.org/rfc/rfc2396.txt
     const StartsWithSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):.*$/;
 
     const match = str.match(StartsWithSchemePattern);
     if (match === null) {
-        return new URL(std.path.resolve(str), "file:");
+        return str;
     }
 
     switch (Deno.build.os) {
@@ -353,8 +332,7 @@ function parseURL(str: string): URL {
         return new URL(str);
     }
     // path has drive letter are absolute
-    console.log(str);
-    return new URL(`file:///${str}`);
+    return str;
 };
 
 export class ArgumentMissingError {
