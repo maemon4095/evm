@@ -7,7 +7,7 @@ abstract class PathSafeStringMark {
 type PathSafeString = string & PathSafeStringMark;
 
 function isPathSafe(str: string): str is PathSafeString {
-    const regex = /[A-Za-z0-9_\-\. ]+/;
+    const regex = /^[A-Za-z0-9_\-\. ]+$/;
     return regex.test(str);
 }
 
