@@ -160,8 +160,10 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             };
         }
         case "list": {
+            const listUsage = `evm plugin list`;
+
             if (args.length > 1) {
-                throw new UnexpectedArgumentError(args.slice(1), usage);
+                throw new UnexpectedArgumentError(args.slice(1), listUsage);
             }
 
             return {
