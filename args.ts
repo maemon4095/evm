@@ -12,17 +12,43 @@ function isPathSafe(str: string): str is PathSafeString {
 }
 
 
-export type Args = ArgList | ArgPlugin | ArgInstall | ArgUse;
+export type Args = ArgList | ArgPlugin | ArgInstall | ArgUse | ArgLocation;
 
 /** ... --location ${identifier} */
-export type ArgLocation = {
+export type ArgLocationOption = {
     identifier: PathSafeString;
+};
+
+/** evm location add ${name} ${path} | 
+ *  evm location remove ${name} |
+ *  evm location list
+ */
+export type ArgLocation = {
+    subCommand: "location";
+    locationSubCommand: ArgLocationList | ArgLocationAdd | ArgLocationRemove;
+};
+
+/** ... list */
+export type ArgLocationList = {
+    subCommand: "list";
+};
+
+/** ... add ${name} ${path} */
+export type ArgLocationAdd = {
+    subCommand: "add";
+    path: string;
+    name: PathSafeString;
+};
+/** ... remove ${name} */
+export type ArgLocationRemove = {
+    subCommand: "remove";
+    name: PathSafeString;
 };
 
 /** evm list [--location ${identifier}] [${identifier}] */
 export type ArgList = {
     subCommand: "list";
-    location: ArgLocation | null;
+    location: ArgLocationOption | null;
     identifier: PathSafeString | null;
 };
 
@@ -52,7 +78,7 @@ export type ArgPluginList = {
 /** evm install [--location ${identifier}] ${identifier} ${version} */
 export type ArgInstall = {
     subCommand: "install";
-    location: ArgLocation | null;
+    location: ArgLocationOption | null;
     identifier: PathSafeString;
     version: PathSafeString;
 };
@@ -87,6 +113,9 @@ export function parseArgs(args: string[]): Args {
         case "use": {
             return parseRestOfUse(args.slice(1));
         }
+        case "location": {
+            return parseRestOfLocation(args.slice(1));
+        }
         default: {
             throw new InvalidArgumentError(SUBCOMMAND, `unrecognized subcommand: '${subCommand}'`, usage);
         }
@@ -98,7 +127,7 @@ function parseRestOfList(args: string[]): ArgList {
     const IDENT = "IDENTIFIER";
     const usage = `evm list [--location \${${LOCATION_IDENT}}] [\${${IDENT}}]`;
 
-    let location: ArgLocation | null = null;
+    let location: ArgLocationOption | null = null;
     let identifier: PathSafeString | null = null;
     let index = 0;
 
@@ -124,7 +153,7 @@ function parseRestOfList(args: string[]): ArgList {
 
             location = {
                 identifier: l
-            } as ArgLocation;
+            } as ArgLocationOption;
         } else {
             if (identifier !== null) {
                 throw new UnexpectedArgumentError(args, usage);
@@ -210,7 +239,7 @@ function parseRestOfInstall(args: string[]): ArgInstall {
     const VERSION = "VERSION";
     const usage = `evm install [--location \${${LOCATION_IDENT}}] \${${IDENT}} \${${VERSION}} `;
 
-    let location: ArgLocation | null = null;
+    let location: ArgLocationOption | null = null;
     let identifier: PathSafeString | null = null;
     let version: PathSafeString | null = null;
     let index = 0;
@@ -304,6 +333,90 @@ function parseRestOfUse(args: string[]): ArgUse {
         identifier,
         version
     };
+}
+
+function parseRestOfLocation(args: string[]): ArgLocation {
+    const SUBCOMMAND = "LOCATION_SUBCOMMAND";
+    const usage = `evm location \${${SUBCOMMAND}: add | remove | list} ...`;
+
+    const mode = args.at(0);
+
+    switch (mode) {
+        case "add": {
+            return {
+                subCommand: "location",
+                locationSubCommand: parseAdd(args.slice(1)),
+            };
+        }
+        case "remove": {
+            return {
+                subCommand: "location",
+                locationSubCommand: parseRemove(args.slice(1)),
+            };
+        }
+        case "list": {
+            if (args.length > 1) {
+                throw new UnexpectedArgumentError(args.slice(1), usage);
+            }
+
+            return {
+                subCommand: "location",
+                locationSubCommand: {
+                    subCommand: mode,
+                },
+            };
+        }
+        case undefined: {
+            throw new ArgumentMissingError(SUBCOMMAND, usage);
+        }
+        default: {
+            throw new InvalidArgumentError(SUBCOMMAND, `unrecognized location subcommand: '${mode}'`, usage);
+        }
+    }
+
+    function parseAdd(args: string[]): ArgLocationAdd {
+        const PATH = "PATH";
+        const NAME = "NAME";
+        const usage = `evm plugin add \${${NAME}} \${${PATH}}`;
+        if (args.length > 2) {
+            throw new UnexpectedArgumentError(args, usage);
+        }
+        const name = args.at(0);
+        const path = args.at(1);
+
+        if (name === undefined) {
+            throw new ArgumentMissingError(NAME, usage);
+        }
+
+        if (path === undefined) {
+            throw new ArgumentMissingError(PATH, usage);
+        }
+
+        if (!isPathSafe(name)) {
+            throw new InvalidArgumentError(NAME, messageArgMustBePathSafe(NAME), usage);
+        }
+
+        return { subCommand: "add", name, path };
+    }
+
+    function parseRemove(args: string[]): ArgLocationRemove {
+        const NAME = "NAME";
+        const usage = `evm plugin remove \${${NAME}}`;
+        if (args.length > 2) {
+            throw new UnexpectedArgumentError(args, usage);
+        }
+        const name = args.at(0);
+
+        if (name === undefined) {
+            throw new ArgumentMissingError(NAME, usage);
+        }
+
+        if (!isPathSafe(name)) {
+            throw new InvalidArgumentError(NAME, messageArgMustBePathSafe(NAME), usage);
+        }
+
+        return { subCommand: "remove", name };
+    }
 }
 
 
