@@ -3,11 +3,11 @@ abstract class PathSafeStringMark {
     readonly #mark: undefined;
 }
 
-/** non emptystring only contains A to Z, a to z, 0 to 9, _, - and . */
+/** non empty string does not starts with - and only contains A to Z, a to z, 0 to 9, _, - and . */
 type PathSafeString = string & PathSafeStringMark;
 
 function isPathSafe(str: string): str is PathSafeString {
-    const regex = /^[A-Za-z0-9_\-\. ]+$/;
+    const regex = /^[A-Za-z0-9_\.][A-Za-z0-9_\. -]+$/;
     return regex.test(str);
 }
 
