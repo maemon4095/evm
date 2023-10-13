@@ -79,6 +79,7 @@ export type ArgPluginList = {
 export type ArgInstall = {
     subCommand: "install";
     location: ArgLocationOption | null;
+    force: "--force" | null;
     identifier: PathSafeString;
     version: PathSafeString;
 };
@@ -238,8 +239,9 @@ function parseRestOfInstall(args: string[]): ArgInstall {
     const LOCATION_IDENT = "LOCATION_IDENTIFIER";
     const IDENT = "IDENTIFIER";
     const VERSION = "VERSION";
-    const usage = `evm install [--location \${${LOCATION_IDENT}}] \${${IDENT}} \${${VERSION}} `;
+    const usage = `evm install [--location \${${LOCATION_IDENT}}] [--force] \${${IDENT}} \${${VERSION}} `;
 
+    let force: "--force" | null = null;
     let location: ArgLocationOption | null = null;
     let identifier: PathSafeString | null = null;
     let version: PathSafeString | null = null;
@@ -271,6 +273,14 @@ function parseRestOfInstall(args: string[]): ArgInstall {
             continue;
         }
 
+        if (arg === "--force") {
+            if (force !== null) {
+                throw new UnexpectedArgumentError(args, usage);
+            }
+            force = arg;
+            continue;
+        }
+
         if (identifier === null) {
             if (!isPathSafe(arg)) {
                 throw new InvalidArgumentError(IDENT, messageArgMustBePathSafe(IDENT), usage);
@@ -298,6 +308,7 @@ function parseRestOfInstall(args: string[]): ArgInstall {
 
     return {
         subCommand: "install",
+        force,
         location,
         identifier,
         version
@@ -339,22 +350,21 @@ function parseRestOfUse(args: string[]): ArgUse {
             location = {
                 identifier: l
             } as ArgLocationOption;
-        } else {
-            if (identifier === undefined) {
-                if (!isPathSafe(arg)) {
-                    throw new InvalidArgumentError(IDENT, messageArgMustBePathSafe(IDENT), usage);
-                }
-                identifier = arg;
-                continue;
-            }
-            if (version === undefined) {
-                if (!isPathSafe(arg)) {
-                    throw new InvalidArgumentError(VERSION, messageArgMustBePathSafe(VERSION), usage);
-                }
-                version = arg;
-                continue;
-            }
 
+            continue;
+        }
+
+        if (identifier === undefined) {
+            if (!isPathSafe(arg)) {
+                throw new InvalidArgumentError(IDENT, messageArgMustBePathSafe(IDENT), usage);
+            }
+            identifier = arg;
+        } else if (version === undefined) {
+            if (!isPathSafe(arg)) {
+                throw new InvalidArgumentError(VERSION, messageArgMustBePathSafe(VERSION), usage);
+            }
+            version = arg;
+        } else {
             throw new UnexpectedArgumentError(args.slice(index - 1), usage);
         }
     }
@@ -550,5 +560,5 @@ export class UnexpectedArgumentError {
 }
 
 function messageArgMustBePathSafe(ident: string) {
-    return `${ident} must not contain other than A-Z, a-z, 0-9, - or _`;
+    return `${ident} must not starts with - and must not contain other than A-Z, a-z, 0-9, - or _`;
 }
