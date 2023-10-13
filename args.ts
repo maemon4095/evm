@@ -178,7 +178,7 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             throw new InvalidArgumentError(PLUGIN_SUBCOMMAND, `unrecognized plugin subcommand: '${mode}'`, usage);
         }
     }
-    function parseInstallOrUninstall(cmd: "install" | "uninstall", args: string[]): ArgPluginInstall {
+    function parseInstallOrUninstall(cmd: "install" | "uninstall", args: string[]): ArgPluginUninstall | ArgPluginInstall {
         const URL_VAR = "URL";
         const usage = `evm plugin ${cmd} \${${URL_VAR}}`;
         if (args.length > 1) {
@@ -200,7 +200,7 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             }
             throw e;
         }
-        return { subCommand: "install", pathOrURL };
+        return { subCommand: cmd, pathOrURL };
     }
 }
 
