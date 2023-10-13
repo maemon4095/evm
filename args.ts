@@ -93,7 +93,7 @@ export type ArgUse = {
 
 export function parseArgs(args: string[]): Args {
     const SUBCOMMAND = "SUBCOMMAND";
-    const usage = `evm \${${SUBCOMMAND}: list | plugin | install | use}`;
+    const usage = `evm \${${SUBCOMMAND}: list | plugin | install | use | location} ...`;
     if (args.length === 0) {
         throw new ArgumentMissingError(SUBCOMMAND, usage);
     }
