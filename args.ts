@@ -83,9 +83,10 @@ export type ArgInstall = {
     version: PathSafeString;
 };
 
-/** evm use ${identifier} ${version} */
+/** evm use [--location ${identifier}] ${identifier} ${version} */
 export type ArgUse = {
     subCommand: "use";
+    location: ArgLocationOption | null;
     identifier: PathSafeString;
     version: PathSafeString;
 };
@@ -302,36 +303,75 @@ function parseRestOfInstall(args: string[]): ArgInstall {
         version
     };
 }
+
 function parseRestOfUse(args: string[]): ArgUse {
+    const LOCATION_IDENT = "LOCATION_IDENTIFIER";
     const IDENT = "IDENTIFIER";
     const VERSION = "VERSION";
-    const usage = `evm use \${${IDENT}} \${${VERSION}} `;
+    const usage = `evm use [--location \${${LOCATION_IDENT}}] \${${IDENT}} \${${VERSION}} `;
 
-    if (args.length > 2) {
-        throw new UnexpectedArgumentError(args, usage);
+    let identifier;
+    let version;
+    let location = null;
+
+    let index = 0;
+
+    while (index < args.length) {
+        const arg = args[index];
+        index += 1;
+
+        if (arg === "--location") {
+            if (location !== null) {
+                throw new UnexpectedArgumentError(args, usage);
+            }
+
+            const l = args.at(index);
+            index += 1;
+
+            if (l === undefined) {
+                throw new ArgumentMissingError(LOCATION_IDENT, usage);
+            }
+
+            if (!isPathSafe(l)) {
+                throw new InvalidArgumentError(LOCATION_IDENT, messageArgMustBePathSafe(LOCATION_IDENT), usage);
+            }
+
+            location = {
+                identifier: l
+            } as ArgLocationOption;
+        } else {
+            if (identifier === undefined) {
+                if (!isPathSafe(arg)) {
+                    throw new InvalidArgumentError(IDENT, messageArgMustBePathSafe(IDENT), usage);
+                }
+                identifier = arg;
+                continue;
+            }
+            if (version === undefined) {
+                if (!isPathSafe(arg)) {
+                    throw new InvalidArgumentError(VERSION, messageArgMustBePathSafe(VERSION), usage);
+                }
+                version = arg;
+                continue;
+            }
+
+            throw new UnexpectedArgumentError(args.slice(index - 1), usage);
+        }
     }
-
-    const identifier = args.at(0);
-    const version = args.at(1);
 
     if (identifier === undefined) {
         throw new ArgumentMissingError(IDENT, usage);
-    }
-    if (!isPathSafe(identifier)) {
-        throw new InvalidArgumentError(IDENT, messageArgMustBePathSafe(IDENT), usage);
     }
 
     if (version === undefined) {
         throw new ArgumentMissingError(VERSION, usage);
     }
-    if (!isPathSafe(version)) {
-        throw new InvalidArgumentError(VERSION, messageArgMustBePathSafe(VERSION), usage);
-    }
 
     return {
         subCommand: "use",
         identifier,
-        version
+        version,
+        location
     };
 }
 
@@ -418,7 +458,6 @@ function parseRestOfLocation(args: string[]): ArgLocation {
         return { subCommand: "remove", name };
     }
 }
-
 
 function parsePathOrURL(str: string): URL | string {
     // See RFC2396 3.1 Scheme Component: https://www.ietf.org/rfc/rfc2396.txt
