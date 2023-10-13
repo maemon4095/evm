@@ -38,7 +38,7 @@ export type ArgPluginInstall = {
     pathOrURL: URL | string;
 };
 
-/** ... uninstall ${url} */;
+/** ... uninstall ${url} */
 export type ArgPluginUninstall = {
     subCommand: "uninstall";
     pathOrURL: URL | string;
@@ -338,7 +338,7 @@ function parsePathOrURL(str: string): URL | string {
         return new URL(str);
     }
     return str;
-};
+}
 
 export class ArgumentMissingError {
     #name: string;
