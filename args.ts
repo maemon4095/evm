@@ -160,6 +160,10 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             };
         }
         case "list": {
+            if (args.length > 1) {
+                throw new UnexpectedArgumentError(args.slice(1), usage);
+            }
+
             return {
                 subCommand: "plugin",
                 pluginSubCommand: { subCommand: "list" }
@@ -174,7 +178,7 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
     }
     function parseInstallOrUninstall(cmd: "install" | "uninstall", args: string[]): ArgPluginInstall {
         const URL_VAR = "URL";
-        const usage = `${cmd} \${${URL_VAR}}`;
+        const usage = `evm plugin ${cmd} \${${URL_VAR}}`;
         if (args.length > 1) {
             throw new UnexpectedArgumentError(args, usage);
         }
@@ -190,7 +194,7 @@ function parseRestOfPlugin(args: string[]): ArgPlugin {
             pathOrURL = parsePathOrURL(arg);
         } catch (e) {
             if (e instanceof TypeError) {
-                throw new InvalidArgumentError(URL_VAR, `${URL_VAR} must be valid url.`, usage);
+                throw new InvalidArgumentError(URL_VAR, `${URL_VAR} must be valid path or url.`, usage);
             }
             throw e;
         }
@@ -331,7 +335,6 @@ function parsePathOrURL(str: string): URL | string {
         // currently drive letter are always one character
         return new URL(str);
     }
-    // path has drive letter are absolute
     return str;
 };
 
