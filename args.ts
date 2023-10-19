@@ -58,6 +58,7 @@ export type ArgPlugin = {
     pluginSubCommand: ArgPluginInstall | ArgPluginUninstall | ArgPluginList;
 };
 
+// TODO: add permission options
 /** ... install ${url} */
 export type ArgPluginInstall = {
     subCommand: "install";

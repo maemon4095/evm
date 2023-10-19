@@ -1,4 +1,5 @@
 import { ArgumentMissingError, InvalidArgumentError, UnexpectedArgumentError, parseArgs } from "./args.ts";
+import { AsyncWorker } from "./asyncworker/AsyncWorker.ts";
 
 const args = (() => {
   try {
@@ -34,6 +35,7 @@ const args = (() => {
       }
 
       console.log(`Unexpected Error: `, e);
+      throw e;
     }
 
     Deno.exit();
@@ -42,7 +44,7 @@ const args = (() => {
 
 console.log(args);
 
-const worker = new Worker(new URL(`data:text/javascript;base64,${btoa("console.log(`aaa`)")}`, import.meta.url), {
+const worker = new AsyncWorker(new URL(`data:text/javascript;base64,${btoa("console.log(`aaa`)")}`, import.meta.url), {
   type: "module",
   deno: {
     permissions: "none"
