@@ -3,6 +3,6 @@ export type PluginProperties = {
 };
 
 /** { name: path } pairs that installed executables */
-export type InstallArtifacts = {
+export type PluginInstallArtifacts = {
     [name: string]: string;
 };
