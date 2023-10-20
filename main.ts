@@ -43,10 +43,3 @@ const args = (() => {
 })();
 
 console.log(args);
-
-const worker = new AsyncWorker(new URL(`data:text/javascript;base64,${btoa("console.log(`aaa`)")}`, import.meta.url), {
-  type: "module",
-  deno: {
-    permissions: "none"
-  }
-} as WorkerOptions);
