@@ -1,3 +1,4 @@
+import { PathSafeString } from "../PathSafeString.ts";
 import { AsyncWorker } from "../asyncworker/AsyncWorker.ts";
 import { InstallArtifacts, PluginProperties } from "./common.ts";
 
@@ -10,17 +11,23 @@ export class Plugin {
     }
 
     async properties() {
-        const response = await this.#worker.request({ type: "properties" });
+        const request: PropertiesRequest = { type: "properties" };
+        const response = await this.#worker.request(request);
         assertPluginProperties(response);
         return response;
     }
 
-    async install(version: string, directory: string) {
-        const response = await this.#worker.request({ type: "install", version, directory });
+    async install(version: PathSafeString, directory: string) {
+        const request: InstallRequest = { type: "install", version, directory };
+        const response = await this.#worker.request(request);
         assertInstallArtifacts(response);
         return response;
     }
 }
+
+export type PropertiesRequest = { type: "properties"; };
+export type InstallRequest = { type: "install", version: PathSafeString, directory: string; };
+
 
 function assertPluginProperties(maybeProps: unknown): asserts maybeProps is PluginProperties {
 

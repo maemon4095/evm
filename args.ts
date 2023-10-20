@@ -1,16 +1,4 @@
-// deno-lint-ignore no-unused-vars
-abstract class PathSafeStringMark {
-    readonly #mark: undefined;
-}
-
-/** non empty string does not starts with - and only contains A to Z, a to z, 0 to 9, _, - and . */
-type PathSafeString = string & PathSafeStringMark;
-
-function isPathSafe(str: string): str is PathSafeString {
-    const regex = /^[A-Za-z0-9_\.][A-Za-z0-9_\. -]+$/;
-    return regex.test(str);
-}
-
+import { PathSafeString, isPathSafe } from "./PathSafeString.ts";
 
 export type Args = ArgList | ArgPlugin | ArgInstall | ArgUse | ArgLocation;
 
